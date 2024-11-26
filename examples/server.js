@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import http from 'http';
 import minimist from 'minimist';
-import url from "url";
+import url from 'url';
 const argv = minimist(process.argv.slice(2));
 let server;
 let dirs;
@@ -30,7 +30,15 @@ function listDirs(root) {
 function getIndexTemplate() {
   const links = dirs.map(function (dir) {
     const url = '/' + dir;
-    return '<li onclick="document.location=\'' + url + '\'"><a href="' + url + '">' + url + '</a></li>';
+    return (
+      '<li onclick="document.location=\'' +
+      url +
+      '\'"><a href="' +
+      url +
+      '">' +
+      url +
+      '</a></li>'
+    );
   });
 
   return (
@@ -69,12 +77,11 @@ function send404(res, body) {
 function pipeFileToResponse(res, file, type) {
   if (type) {
     res.writeHead(200, {
-      'Content-Type': type
+      'Content-Type': type,
     });
   }
   fs.createReadStream(path.join(__dirname, file)).pipe(res);
 }
-
 
 dirs = listDirs(__dirname);
 
@@ -126,14 +133,15 @@ server = http.createServer(function (req, res) {
   }
 
   // Process server request
-  else if (new RegExp('(' + dirs.join('|') + ')\/server').test(url)) {
+  else if (new RegExp('(' + dirs.join('|') + ')/server').test(url)) {
     if (fs.existsSync(path.join(__dirname, url + '.js'))) {
-      require(path.join(__dirname, url + '.js'))(req, res);
+      import('./' + url + '.js').then((module) => {
+        module.default(req, res);
+      });
     } else {
       send404(res);
     }
-  }
-  else {
+  } else {
     send404(res);
   }
 });
